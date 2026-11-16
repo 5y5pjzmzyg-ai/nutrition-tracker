@@ -12,6 +12,6 @@ Export a JSON backup from Settings before clearing browser data or switching dev
 
 ## Development
 
-Serve the site directory over localhost, for example with `python3 -m http.server --directory site 8000`, and open http://localhost:8000. Run `TZ=Europe/Helsinki node --test` from the repository root.
+Serve the repository directory over localhost, for example with `python3 -m http.server 8000`, and open http://localhost:8000. Run `TZ=Europe/Helsinki node --test` from the repository root.
 
-For GitHub Pages, select GitHub Actions in Settings → Pages and run the Deploy Nutrition Tracker workflow. The workflow tests the app and publishes the site directory. Relative paths support the GitHub Pages project subdirectory. Update the service worker cache version when shipping asset changes. Keep personal backups outside the source tree.
+For GitHub Pages, select GitHub Actions in Settings → Pages and run the Deploy Nutrition Tracker workflow. The workflow tests the app and publishes the app files. Relative paths support the GitHub Pages project subdirectory. Update the service worker cache version when shipping asset changes. Keep personal backups outside the source tree.
