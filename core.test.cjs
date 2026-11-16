@@ -1,6 +1,6 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {trackingDay,monday,monthShift,totals,summarize,initial,validate,getTarget} = require('../site/core.js');
+const {trackingDay,monday,monthShift,totals,summarize,initial,validate,getTarget} = require('./core.js');
 
 test('04:00 boundary and configurable cutoff', () => {
   assert.equal(trackingDay(new Date(2026,10,17,1,30),'04:00'),'2026-11-16');
