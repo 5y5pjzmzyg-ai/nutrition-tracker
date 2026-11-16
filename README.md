@@ -1,2 +1,17 @@
-# nutrition-tracker
-An offline-first nutrition and body composition tracker.
+# Nutrition Tracker
+
+An offline-first personal tracker for calories, protein and body composition. The app is static and stores its data in IndexedDB on the current device.
+
+## Use on iPhone
+
+Open the published GitHub Pages address in Safari. Tap Share, then Add to Home Screen, and leave Open as Web App enabled if shown. Launch the app from its Home Screen icon. Load it once online so the service worker can cache the app before using it offline.
+
+Start in Settings to add targets and saved foods. Today opens on the current tracking date, which changes at 04:00 by default. The date controls let you log or edit a previous day. Leave protein blank when you don't know it. The Sunday check-in accepts weight in kg and body fat and skeletal muscle as percentages.
+
+Export a JSON backup from Settings before clearing browser data or switching device. Importing a backup replaces the existing local records after confirmation. Devices do not synchronise automatically.
+
+## Development
+
+Serve the site directory over localhost, for example with `python3 -m http.server --directory site 8000`, and open http://localhost:8000. Run `TZ=Europe/Helsinki node --test` from the repository root.
+
+For GitHub Pages, select GitHub Actions in Settings → Pages and run the Deploy Nutrition Tracker workflow. The workflow tests the app and publishes the site directory. Relative paths support the GitHub Pages project subdirectory. Update the service worker cache version when shipping asset changes. Keep personal backups outside the source tree.

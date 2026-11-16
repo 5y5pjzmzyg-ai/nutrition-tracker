@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#faf9f5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="Track calories, protein and weekly body composition.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png">
+<link rel="stylesheet" href="./style.css">
+<title>Nutrition Tracker</title>
+<script defer src="./core.js"></script>
+<script defer src="./app.js"></script>
+</head>
+<body>
+<header><div class="wrap mast"><span class="mark" aria-hidden="true">◒</span><strong>Nutrition Tracker</strong><span id="connection" class="connection" hidden>Offline</span></div></header>
+<main id="main" class="wrap"><p>Loading your tracker…</p></main>
+<nav aria-label="Main navigation"><div class="wrap tabs">
+<button type="button" data-view="Today" aria-current="page">Today</button><button type="button" data-view="Trends">Trends</button><button type="button" data-view="Settings">Settings</button>
+</div></nav>
+<div id="notice" class="notice" role="status" hidden></div>
+<dialog id="editor"></dialog>
+<noscript>Enable JavaScript to use Nutrition Tracker.</noscript>
+</body>
+</html>
