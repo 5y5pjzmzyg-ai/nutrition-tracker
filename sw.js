@@ -1,4 +1,4 @@
-const cacheName = 'nutrition-tracker-v1';
+const cacheName = 'nutrition-tracker-v2';
 const assets = ['./','./index.html','./style.css','./core.js','./app.js','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(assets)));

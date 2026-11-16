@@ -96,18 +96,27 @@ function savedFoods() {
   for (const entry of state.entries) uses.set(entry.foodId,(uses.get(entry.foodId)||0)+1);
   return [...state.foods].sort((a,b) => (state.prefs.sort==='frequency' ? (uses.get(b.id)||0)-(uses.get(a.id)||0) : 0) || a.name.localeCompare(b.name));
 }
+const massUnit = () => state.prefs.massUnit || 'kg';
+const bodyUnit = unit => unit === 'kg' ? massUnit() : unit;
+const bodyValue = (value,unit) => unit === 'kg' ? massFromKg(value,massUnit()) : value;
+const bodyInputValue = (value,unit) => value == null ? null : unit === 'kg' ? Number(bodyValue(value,unit).toPrecision(12)) : value;
+function massSwitch() {
+  return '<div class="mass-switch" role="group" aria-label="Body measurement unit">'+['kg','lb'].map(unit=>
+    button(unit,'mass-unit','data-value="'+unit+'" aria-pressed="'+(massUnit()===unit)+'"')).join('')+'</div>';
+}
 function bodySummary(day) {
   const sorted = [...state.body].sort((a,b) => b.day.localeCompare(a.day));
   const isMeasurementDay = day === current() && weekday(day) === state.prefs.measure;
   const prompt = bodyFor(day).day ? 'Body composition check completed.' : weekdays[state.prefs.measure]+' body composition check — record your measurements.';
-  return '<section class="card"><div class="section-head"><h2>Body composition</h2>'+button(bodyFor(day).day ? 'Edit check-in' : 'Record', 'edit-body')+'</div>'+
+  return '<section class="card"><div class="section-head"><h2>Body composition</h2><div class="actions">'+massSwitch()+button(bodyFor(day).day ? 'Edit' : 'Record', 'edit-body')+'</div>'+'</div>'+
     (isMeasurementDay ? '<p class="reminder small">'+prompt+'</p>' : '')+
     '<div class="trio measurements">'+metrics.map(([key,name,unit]) => {
-      const [latest,prior] = sorted.filter(item => item[key] !== null);
+      const [latest,prior] = sorted.filter(item => item[key] != null);
+      const legacy = key === 'muscleKg' && !latest ? sorted.find(item => item.muscle != null) : null;
       const delta = prior ? latest[key]-prior[key] : null;
-      return '<div><span class="small">'+name+'</span><strong>'+displayed(latest?.[key],unit)+'</strong>'+
-        (latest ? '<p class="small">'+prettyDay(latest.day)+'</p>' : '')+
-        (delta === null ? '' : '<p class="small">'+(delta>0?'+':'')+format(delta)+' '+(unit==='%'?'percentage points':'kg')+'</p>')+'</div>';
+      return '<div><span class="small">'+name+'</span><strong>'+displayed(bodyValue(latest?.[key],unit),bodyUnit(unit))+'</strong>'+
+        (latest ? '<p class="small">'+prettyDay(latest.day)+'</p>' : legacy ? '<p class="small">Previous entry '+displayed(legacy.muscle,'%')+'</p>' : '')+
+        (delta === null ? '' : '<p class="small">'+(delta>0?'+':'')+format(bodyValue(delta,unit))+' '+(unit==='%'?'percentage points':bodyUnit(unit))+'</p>')+'</div>';
     }).join('')+'</div></section>';
 }
 function today() {
@@ -230,8 +239,9 @@ function trends() {
   const rows = [];
   for (let day=start;day<=end;day=shift(day,1)) rows.push({day,...totals(grouped.get(day)||[]),target:getTarget(state.targets,day)});
   const body = state.body.filter(row => row.day>=start && row.day<=end).sort((a,b) => a.day.localeCompare(b.day));
-  const [key,name,unit] = metrics.find(([metric]) => metric === bodyMetric);
-  const bodyPoints = body.filter(row=>row[key]!==null).map(row=>({day:row.day,value:row[key]}));
+  const [key,name,baseUnit] = metrics.find(([metric]) => metric === bodyMetric);
+  const unit = bodyUnit(baseUnit);
+  const bodyPoints = body.filter(row=>row[key]!=null).map(row=>({day:row.day,value:bodyValue(row[key],baseUnit)}));
   const change = bodyPoints.length>1 ? bodyPoints.at(-1).value-bodyPoints[0].value : null;
   const charts = ['calories','protein'].map(metric => {
     const name = metric[0].toUpperCase()+metric.slice(1);
@@ -240,12 +250,13 @@ function trends() {
       (metric==='protein' && rows.some(row=>row.unknown) ? '<p class="small">Amber marks incomplete protein. The average uses known totals for days with at least one known value.</p>' : '')+'</section>';
   }).join('');
   const summary = weeks ? '<section class="card stack"><h2>'+ (period==='week'?'Weekly':'Monthly') +' summary</h2><div class="trio">'+metrics.map(([k,n,u])=>{
-    const latest = [...body].reverse().find(row=>row[k]!==null);
-    return '<div><span class="small">'+n+'</span><br><strong>'+displayed(latest?.[k],u)+'</strong></div>';
+    const latest = [...body].reverse().find(row=>row[k]!=null);
+    return '<div><span class="small">'+n+'</span><br><strong>'+displayed(bodyValue(latest?.[k],u),bodyUnit(u))+'</strong></div>';
   }).join('')+'</div><details><summary>Daily totals</summary>'+rows.map(row=>'<p class="line small"><span>'+prettyDay(row.day)+'</span><span>'+displayed(row.calories,'kcal')+' · '+displayed(row.protein,'g')+(row.unknown?' · '+row.unknown+' unknown':'')+'</span></p>').join('')+'</details></section>' : '';
   return title('Trends')+'<section class="card stack">'+controls+'</section><div class="charts chart-panel">'+charts+'</div>'+summary+
-    '<section class="card stack"><h2>Body composition</h2><div class="actions filter">'+metrics.map(([value,label])=>button(label,'metric','data-value="'+value+'" aria-pressed="'+(bodyMetric===value)+'"')).join('')+
-    '</div>'+chart(bodyPoints,{name,unit})+(change===null?'':'<p class="small">Change over period '+(change>0?'+':'')+format(change)+' '+(unit==='%'?'percentage points':unit)+'</p>')+'</section>';
+    '<section class="card stack"><div class="section-head"><h2>Body composition</h2>'+massSwitch()+'</div><div class="actions filter">'+metrics.map(([value,label])=>button(label,'metric','data-value="'+value+'" aria-pressed="'+(bodyMetric===value)+'"')).join('')+
+    '</div>'+chart(bodyPoints,{name,unit})+
+    (key==='muscleKg' && body.some(row=>row.muscle!=null) ? '<p class="small">Earlier skeletal muscle percentages are kept in their original entries. This chart shows recorded muscle mass.</p>' : '')+(change===null?'':'<p class="small">Change over period '+(change>0?'+':'')+format(change)+' '+(unit==='%'?'percentage points':unit)+'</p>')+'</section>';
 }
 function render() {
   main.innerHTML = {Today:today,Trends:trends,Settings:settings}[view]();
@@ -275,8 +286,9 @@ function editBody(day) {
   const existing = bodyFor(day);
   popup(existing.day?'Edit body composition':'Record body composition','body',
     input('day','Measurement date','date',day,'required')+
-    '<div class="trio">'+metrics.map(([key,name,unit])=>numberInput(key,name+' ('+unit+')',existing[key],unit==='%'?'max="100"':'data-positive="true"')).join('')+
-    '</div><p class="small">Enter whichever measurements you have.</p>',existing.day,existing.day);
+    '<div class="trio">'+metrics.map(([key,name,unit])=>numberInput(key,name+' ('+bodyUnit(unit)+')',bodyInputValue(existing[key],unit),unit==='%'?'max="100"':'data-positive="true"')).join('')+
+    '</div><p class="small">Enter whichever measurements you have.</p>'+
+    (existing.muscle != null ? '<p class="small">Earlier skeletal muscle reading '+displayed(existing.muscle,'%')+'. Enter muscle mass if you have it.</p>' : ''),existing.day,existing.day);
 }
 function removeRecord(collection,key,value,text) {
   const row = state[collection].find(item=>item[key]===value);
@@ -332,6 +344,11 @@ document.addEventListener('click',event=>{
     case 'import': main.querySelector('#backup').click(); break;
     case 'clear': if (confirm('Delete all local nutrition records, measurements and settings? Export a backup first if you want to keep them.')) save(initial,'Local data cleared.'); break;
     case 'period': period = target.dataset.value; anchor = null; render(); break;
+    case 'mass-unit': {
+      const unit = target.dataset.value;
+      if (unit !== massUnit()) save(next=>{next.prefs.massUnit=unit;return next;},'Body measurements shown in '+unit+'.');
+      break;
+    }
     case 'metric': bodyMetric = target.dataset.value; render(); break;
     case 'previous-period':
     case 'next-period': {
@@ -406,8 +423,14 @@ document.addEventListener('submit',event=>{
       break;
     case 'body': {
       const date = fields.get('day');
-      const body = {day:date,...Object.fromEntries(metrics.map(([key])=>[key,field(fields,key)]))};
-      if (metrics.every(([key])=>body[key]===null)) {feedback('Enter at least one measurement.');return;}
+      const original = bodyFor(recordId);
+      const body = {day:date,...Object.fromEntries(metrics.map(([key,name,unit])=>{
+        const value = field(fields,key);
+        if (unit === '%' || value === null) return [key,value];
+        return [key,value === bodyInputValue(original[key],unit) ? original[key] : massToKg(value,massUnit())];
+      }))};
+      if (original.muscle != null) body.muscle = original.muscle;
+      if (body.muscle == null && metrics.every(([key])=>body[key]===null)) {feedback('Enter at least one measurement.');return;}
       if (date!==recordId && bodyFor(date).day && !confirm('Replace the measurements already saved for this date?')) return;
       save(next=>{
         next.body = next.body.filter(row=>row.day!==date && row.day!==recordId).concat(body);
@@ -424,7 +447,7 @@ document.addEventListener('submit',event=>{
       break;
     case 'preferences':
       save(next=>{
-        next.prefs = {boundary:fields.get('boundary'),measure:Number(fields.get('measure')),sort:fields.get('sort')};
+        next.prefs = {...next.prefs,boundary:fields.get('boundary'),measure:Number(fields.get('measure')),sort:fields.get('sort')};
         return next;
       },'Preferences saved.');
       break;

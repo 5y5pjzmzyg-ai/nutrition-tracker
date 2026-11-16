@@ -1,6 +1,6 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {trackingDay,monday,monthShift,totals,summarize,initial,validate,getTarget} = require('./core.js');
+const {trackingDay,monday,monthShift,totals,summarize,initial,validate,getTarget,massToKg,massFromKg} = require('./core.js');
 
 test('04:00 boundary and configurable cutoff', () => {
   assert.equal(trackingDay(new Date(2026,10,17,1,30),'04:00'),'2026-11-16');
@@ -45,5 +45,23 @@ test('backup validates missing values, dates and body measurement ranges', () =>
   assert.equal(validate(backup),false);
   backup.body[0].muscle = null;
   backup.entries[0].day = '2026-02-31';
+  assert.equal(validate(backup),false);
+});
+
+test('kg and lb convert through kilograms without losing precision', () => {
+  assert.equal(massToKg(100,'lb'),45.359237);
+  assert.equal(massFromKg(45.359237,'lb'),100);
+  assert.equal(massToKg(80,'kg'),80);
+  assert.equal(massFromKg(null,'lb'),null);
+});
+test('legacy percentages and new mass readings are both valid', () => {
+  const backup = initial();
+  delete backup.prefs.massUnit;
+  backup.body.push({day:'2026-11-15',weight:null,fat:null,muscle:39});
+  assert.equal(validate(backup),true);
+  backup.prefs.massUnit = 'lb';
+  backup.body.push({day:'2026-11-22',weight:null,fat:null,muscleKg:34});
+  assert.equal(validate(backup),true);
+  backup.body[1].muscleKg = -1;
   assert.equal(validate(backup),false);
 });

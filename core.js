@@ -1,7 +1,10 @@
 'use strict';
 const weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const categories = ['Breakfast','Lunch','Dinner','Snack','Drink','Other'];
-const metrics = [['weight','Weight','kg'],['fat','Body fat','%'],['muscle','Skeletal muscle','%']];
+const metrics = [['weight','Weight','kg'],['fat','Body fat','%'],['muscleKg','Skeletal muscle','kg']];
+const KG_PER_LB = 0.45359237;
+const massToKg = (value,unit) => value === null ? null : unit === 'lb' ? value * KG_PER_LB : value;
+const massFromKg = (value,unit) => value == null ? null : unit === 'lb' ? value / KG_PER_LB : value;
 const shift = (day, offset) => {
   const date = new Date(day + 'T12:00:00Z');
   date.setUTCDate(date.getUTCDate() + offset);
@@ -43,7 +46,7 @@ function summarize(rows, metric) {
     eligible:eligible.length,
   };
 }
-const initial = () => ({version:1,entries:[],foods:[],body:[],targets:[],prefs:{boundary:'04:00',measure:0,sort:'name'}});
+const initial = () => ({version:1,entries:[],foods:[],body:[],targets:[],prefs:{boundary:'04:00',measure:0,sort:'name',massUnit:'kg'}});
 const validDay = day => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) && Number.isFinite(Date.parse(day)) && shift(day,0) === day;
 const validTime = time => typeof time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
 const numeric = (value,min=0,max=Infinity) => Number.isFinite(value) && value >= min && value <= max;
@@ -53,9 +56,12 @@ function validate(data) {
   const unique = (rows,key) => Array.isArray(rows) && rows.every(row => row && label(row[key])) && new Set(rows.map(row => row[key])).size === rows.length;
   return data?.version === 1 && validTime(data.prefs?.boundary) && Number.isInteger(data.prefs.measure)
     && data.prefs.measure >= 0 && data.prefs.measure < 7 && ['name','frequency'].includes(data.prefs.sort)
+    && (data.prefs.massUnit === undefined || ['kg','lb'].includes(data.prefs.massUnit))
     && unique(data.entries,'id') && data.entries.every(row => validDay(row.day) && validTime(row.time) && label(row.name) && numeric(row.calories) && nullable(row.protein) && (row.foodId == null || label(row.foodId)))
     && unique(data.foods,'id') && data.foods.every(row => label(row.name) && numeric(row.calories) && numeric(row.protein) && typeof row.serving === 'string' && row.serving.length <= 120)
-    && unique(data.body,'day') && data.body.every(row => validDay(row.day) && (row.weight === null || (numeric(row.weight) && row.weight > 0)) && nullable(row.fat,0,100) && nullable(row.muscle,0,100) && metrics.some(([key]) => row[key] !== null))
+    && unique(data.body,'day') && data.body.every(row => validDay(row.day) && (row.weight === null || (numeric(row.weight) && row.weight > 0)) && nullable(row.fat,0,100) && (row.muscle === undefined || nullable(row.muscle,0,100))
+      && (row.muscleKg == null || (numeric(row.muscleKg) && row.muscleKg > 0))
+      && (row.muscle != null || metrics.some(([key]) => row[key] != null)))
     && unique(data.targets,'day') && data.targets.every((row,index,rows) => validDay(row.day) && (!index || rows[index-1].day < row.day) && nullable(row.calories,1) && nullable(row.protein,1));
 }
-if (typeof module !== 'undefined') module.exports = {shift,trackingDay,monday,monthShift,totals,summarize,initial,validate,getTarget};
+if (typeof module !== 'undefined') module.exports = {shift,trackingDay,monday,monthShift,totals,summarize,initial,validate,getTarget,massToKg,massFromKg};

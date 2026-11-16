@@ -6,7 +6,7 @@ An offline-first personal tracker for calories, protein and body composition. Th
 
 Open the published GitHub Pages address in Safari. Tap Share, then Add to Home Screen, and leave Open as Web App enabled if shown. Launch the app from its Home Screen icon. Load it once online so the service worker can cache the app before using it offline.
 
-Start in Settings to add targets and saved foods. Today opens on the current tracking date, which changes at 04:00 by default. The date controls let you log or edit a previous day. Leave protein blank when you don't know it. The Sunday check-in accepts weight in kg and body fat and skeletal muscle as percentages.
+Start in Settings to add targets and saved foods. Today opens on the current tracking date, which changes at 04:00 by default. The date controls let you log or edit a previous day. Leave protein blank when you don't know it. The body composition check-in accepts weight and skeletal muscle mass in kg or lb, and body fat in percent. Switch between kg and lb in Today or Trends. Earlier skeletal muscle percentages remain in the original entries.
 
 Export a JSON backup from Settings before clearing browser data or switching device. Importing a backup replaces the existing local records after confirmation. Devices do not synchronise automatically.
 
